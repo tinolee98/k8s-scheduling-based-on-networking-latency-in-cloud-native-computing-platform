@@ -2,16 +2,24 @@
 # without an file extension
 
 # Use an official Python runtime as a parent image
-FROM ubuntu:20.04
+FROM python:3.7-slim
 
-# Set the working directory to /app
+RUN mkdir -p /app
+
+#ADD ./customScheduler.py .
+
+# Set the working directory
+#WORKDIR ~/k8s-scheduling-based-on-networking-latency-in-cloud-native-computing-platform
 WORKDIR /app
 
-# Copy the current directory contents into the container at /app
-COPY ./app
+# Copy the current directory contents into the container
+#COPY . ~/k8s-scheduling-based-on-networking-latency-in-cloud-native-computing-platform
+COPY customScheduler.py customScheduler.py
+COPY requirements.txt requirements.txt
 
 # Install any needed packages specified in requirements.txt
-RUN pip install --trusted-host pypi.python.org -r requirements.txt
+#RUN pip3 install --trusted-host pypi.python.org -r requirements.txt
+RUN pip install -r requirements.txt
 
 # Make prot 80 available to the world outside this container
 EXPOSE 80
@@ -20,4 +28,4 @@ EXPOSE 80
 ENV NAME World
 
 # Run custumScheduler.py when the container launches
-CMD ["python", "custumScheduler.py"]
+ENTRYPOINT ["python", "customScheduler.py"]
