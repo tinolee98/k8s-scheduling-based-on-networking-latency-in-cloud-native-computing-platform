@@ -1,0 +1,91 @@
+# namespace
+apiVersion: v1
+kind: Namespace
+metadata:
+        name: iperf3
+
+---
+# iperf3 server deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: iperf3-server-deployment
+  labels:
+    app: iperf3-server
+  namespace: iperf3
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: iperf3-server
+  template:
+    metadata:
+      labels:
+        app: iperf3-server
+    spec:
+      affinity:
+        nodeAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 1
+            preference:
+              matchExpressions:
+              - key: kubernetes.io/role
+                operator: In
+                values:
+                - master
+      tolerations:
+        - key: node-role.kubernetes.io/master
+          operator: Exists
+          effect: NoSchedule
+      containers:
+      - name: iperf3-server
+        image: networkstatic/iperf3
+        args: ['-s']
+        ports:
+        - containerPort: 5201
+          name: server
+      terminationGracePeriodSeconds: 0
+      #      lifecycle:
+      #        postStart:
+      #          exec:
+      #            command: ["/bin/sh", "-c", "python3"]
+
+---
+# iperf3 server service
+apiVersion: v1
+kind: Service
+metadata:
+  name: iperf3-server
+  namespace: iperf3
+spec:
+  selector:
+    app: iperf3-server
+  ports:
+  - protocol: TCP
+    port: 5201
+    targetPort: server
+    
+---
+# iperf3 client daemonset
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: iperf3-clients
+  namespace: iperf3
+  labels:
+    app: iperf3-client
+spec:
+  selector:
+    matchLabels:
+      app: iperf3-client
+  template:
+    metadata:
+      labels:
+        app: iperf3-client
+    spec:
+      containers:
+      - name: iperf3-client
+        image: networkstatic/iperf3
+        command: ['/bin/sh', '-c', 'sleep infinity']
+        # To benchmark manually: kubectl exec iperf3-clients-jlfxq -- /bin/sh -c 'iperf3 -c iperf3-server'
+      terminationGracePeriodSeconds: 0
