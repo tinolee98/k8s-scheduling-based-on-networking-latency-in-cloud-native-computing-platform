@@ -9,7 +9,7 @@ for POD in ${CLIENTS}; do
         echo "Waiting for ${POD} to start..."
         sleep 5
     done
-    echo "measure the network latency from ${POD}..."
-    HOST=$(kubectl get -n iperf3 pod ${POD} -o jsonpath='{.status.hostIP}')
-    kubectl exec -it ${POD} -n iperf3 -- iperf3 -c iperf3-server -J -T"Client on ${HOST}" $@ > ./latency/${POD}_latency.json
+    NODE=$(kubectl get -n iperf3 pod ${POD} -o jsonpath='{.spec.nodeName}')
+    echo "measure the network latency from ${NODE} to masterNode..."
+    kubectl exec -it ${POD} -n iperf3 -- iperf3 -c iperf3-server -J -T"Client on ${NODE}" $@ > ./latency/${NODE}_latency.json
 done

@@ -12,13 +12,28 @@ v1 = client.CoreV1Api()
 
 scheduler_name = "testScheduler"
 
-def nodes_available():
-    ready_nodes = []
-    for n in v1.list_node().items:
-        for status in n.status.conditions:
-            if status.status == "True" and status.type == "Ready":
-                ready_nodes.append(n.metadata.name)
-    return ready_nodes
+def nearest_node():
+    nodeFile = open('../iperf/nodes.txt')
+    nodeString = nodeFile.readline()
+    nodeFile.close()
+    nodes = nodeString.split()
+    print(nodes)
+    latencyFile = open("../iperf/latency/latency.txt",'r')
+    latencyString = latencyFile.readline()
+    latency = list(map(int, latencyString.split()))
+    print(latency)
+    latencyFile.close()
+    
+    for i in range(len(nodes)):
+        if i == 0:
+            nearest = latency[i]
+            nearestNode = nodes[i]
+        else:
+            if nearest < latency[i]:
+                nearest = latency[i]
+                nearestNode = nodes[i]
+    print(nearestNode)
+    return nearestNode
 
 def scheduler(name, node, namespace="default"):
     target = client.V1ObjectReference()
@@ -41,7 +56,7 @@ def main():
     for event in w.stream(v1.list_pod_for_all_namespaces):
         if event['object'].status.phase == "Pending" and event['object'].spec.scheduler_name == scheduler_name:
             try:
-                res = scheduler(event['object'].metadata.name, random.choice(nodes_available()))
+                res = scheduler(event['object'].metadata.name, nearest_node())
                 print("Success Scheduling!")
             except ApiException as e:
                 print(json.lods(e.body)['message'])
